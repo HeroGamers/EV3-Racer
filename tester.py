@@ -1,28 +1,7 @@
-#!/usr/bin/env python3
+import json
 import math
 
-from ev3dev2.motor import MoveTank, MediumMotor, OUTPUT_A, OUTPUT_B, OUTPUT_D
-from ev3dev2.sensor import INPUT_1
-from ev3dev2.sensor.lego import ColorSensor
-from ev3dev2.button import Button
-import os
-import sys
-import json
-from time import sleep
-
-
-# Variables
-scoreThreshold = 10
-
-# The motors, sensors and other things on the robot
-buttons = Button()  # Any buton on the robot
-backMotors = MoveTank(left_motor_port=OUTPUT_A, right_motor_port=OUTPUT_D)  # Motor on output port A and D
-driveMotor = MediumMotor(address=OUTPUT_B)  # Motor on output port B
-sensor = ColorSensor(address=INPUT_1)  # Color sensor on input port 1
-
-
-def debug(*args, **kwargs):
-    print(*args, **kwargs, file=sys.stderr)
+scoreThreshold = 20
 
 
 class Color:
@@ -56,19 +35,6 @@ class Color:
             for value in colors[self.color]:
                 self.RGB_values.append((value["R"], value["G"], value["B"]))
 
-
-# Colors
-black = Color("black")
-red = Color("red")
-yellow = Color("yellow")
-
-
-def setup():
-    os.system('setfont Lat15-TerminusBold14')  # Sets the console font
-    print('\x1Bc', end='')  # Resets the console
-    print("Hello, World!")
-
-
 def getColor(rgb):
     # The lower score the better
     redScore = 0
@@ -78,16 +44,28 @@ def getColor(rgb):
     def getScore(color, rgb):
         scores = []
         for db_rgb in color.RGB_values:
+            print(str(rgb) + " - " + str(db_rgb))
             vec_diff = (rgb[0]-db_rgb[0], rgb[1]-db_rgb[1], rgb[2]-db_rgb[2])
+            print(str(vec_diff))
             vec_length = math.sqrt(vec_diff[0]**2+vec_diff[1]**2+vec_diff[2]**2)
+            print(vec_length)
             scores.append(vec_length)
+            print("----------------")
 
         return sum(scores)/len(scores)
 
     # Get color scores
+    print("=================")
+    print("red")
     redScore = getScore(red, rgb)
+    print(redScore)
+    print("black")
     blackScore = getScore(black, rgb)
+    print(blackScore)
+    print("yellow")
     yellowScore = getScore(yellow, rgb)
+    print(yellowScore)
+    print("=================")
 
     # Get the smallest score
     score_dict = {"red": redScore, "black": blackScore, "yellow": yellowScore}
@@ -103,49 +81,36 @@ def getColor(rgb):
     print(str(lowest_score_value) + "/" + str(scoreThreshold))
 
     if chosenColor and lowest_score_value <= scoreThreshold:
+        print("Got the color: " + chosenColor.color)
         return chosenColor
     return None
 
 
-def doRace():
-    print("Starting racer...")
+print("Load")
 
-    # while buttons.any() is False:
-    #     print(sensor.rgb)
+# Colors
+black = Color("black")
+red = Color("red")
+yellow = Color("yellow")
 
-    while True:
-        read_color = sensor.rgb
-
-        color = getColor(read_color)
-        if not color:
-            colorName = "None"
-        else:
-            colorName = color.color
-
-        print("Current color: " + colorName)
-
-        # print(to_save)
-        if buttons.right:
-            red.RGB_values.append(read_color)
-            print("Saved to red")
-            sleep(2)
-        elif buttons.up:
-            black.RGB_values.append(read_color)
-            print("Saved to black")
-            sleep(2)
-        elif buttons.left:
-            yellow.RGB_values.append(read_color)
-            print("Saved to yellow")
-            sleep(2)
-        elif buttons.enter:
-            red.save()
-            black.save()
-            yellow.save()
-            print("Saved colors to colors.json")
-            sleep(2)
+print(black.__dict__, red.__dict__, yellow.__dict__)
 
 
-if __name__ == '__main__':
-    setup()
-    sleep(5)
-    doRace()
+
+
+# getColor((11, 14, 16))
+# getColor((45, 9, 8))
+# getColor((166, 73, 31))
+
+
+# print("Edit")
+#
+#
+# print("Save")
+#
+# black.save()
+# red.save()
+# yellow.save()
+#
+# print(black.__dict__, red.__dict__, yellow.__dict__)
+
