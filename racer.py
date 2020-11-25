@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
-import math
-
-from ev3dev2.motor import MoveTank, MediumMotor, OUTPUT_A, OUTPUT_B, OUTPUT_D
+from ev3dev2.motor import MoveTank, MediumMotor, OUTPUT_A, OUTPUT_B, OUTPUT_D, SpeedPercent
 from ev3dev2.sensor import INPUT_1
 from ev3dev2.sensor.lego import ColorSensor
 from ev3dev2.button import Button
 import os
 import sys
-import json
+import collections
 from time import sleep
+import colorAPI
 
 
 # Variables
-scoreThreshold = 10
+driveSpeed = SpeedPercent(100)
+turnDriveSpeed = SpeedPercent(50)
+turnSpeed = [SpeedPercent(30), SpeedPercent(-30)]  # Right and left
+turnDegrees = 90
+backMotorsState = "off"
+seenColorsTolerancePercent = 90
+seenColors = collections.deque(maxlen=5)
+driveDelay = 0.5  # Delay between each loop of driving
 
 # The motors, sensors and other things on the robot
 buttons = Button()  # Any buton on the robot
@@ -25,86 +31,38 @@ def debug(*args, **kwargs):
     print(*args, **kwargs, file=sys.stderr)
 
 
-class Color:
-    color = None
-    RGB_values = []
-
-    def __init__(self, color, rgb_values=None):
-        self.color = color
-        if rgb_values is None:
-            self.load()
-        else:
-            self.RGB_values = rgb_values
-
-    def save(self):
-        colors = None
-        with open("colors.json", "r") as colorFile:
-            colors = json.load(colorFile)
-
-        with open("colors.json", "w") as colorFile:
-            rgb_push = []
-            for value in self.RGB_values:
-                rgb_push.append({"R": value[0], "G": value[1], "B": value[2]})
-            colors[self.color] = rgb_push
-
-            json.dump(colors, colorFile, indent=4)
-
-    def load(self):
-        with open("colors.json", "r") as colorFile:
-            colors = json.load(colorFile)
-            self.RGB_values = []
-            for value in colors[self.color]:
-                self.RGB_values.append((value["R"], value["G"], value["B"]))
-
-
-# Colors
-black = Color("black")
-red = Color("red")
-yellow = Color("yellow")
-
-
 def setup():
     os.system('setfont Lat15-TerminusBold14')  # Sets the console font
     print('\x1Bc', end='')  # Resets the console
     print("Hello, World!")
 
 
-def getColor(rgb):
-    # The lower score the better
-    redScore = 0
-    blackScore = 0
-    yellowScore = 0
+def drive(color=None):
+    global backMotorsState
+    if not color:
+        if (backMotorsState == "off") or (backMotorsState == "turning"):
+            print("driving")
+            backMotors.on(left_speed=driveSpeed, right_speed=driveSpeed)
+            backMotorsState = "on"
+    elif (color == colorAPI.red) or (color == colorAPI.black):
+        print("turning")
+        # Set down the speed to our turn drive speed
+        if backMotorsState != "turning":
+            backMotors.on(left_speed=turnDriveSpeed, right_speed=turnDriveSpeed)
+            backMotorsState = "turning"
 
-    def getScore(color, rgb):
-        scores = []
-        for db_rgb in color.RGB_values:
-            vec_diff = (rgb[0]-db_rgb[0], rgb[1]-db_rgb[1], rgb[2]-db_rgb[2])
-            vec_length = math.sqrt(vec_diff[0]**2+vec_diff[1]**2+vec_diff[2]**2)
-            scores.append(vec_length)
-
-        return sum(scores)/len(scores)
-
-    # Get color scores
-    redScore = getScore(red, rgb)
-    blackScore = getScore(black, rgb)
-    yellowScore = getScore(yellow, rgb)
-
-    # Get the smallest score
-    score_dict = {"red": redScore, "black": blackScore, "yellow": yellowScore}
-    lowest_score_value = min([redScore, blackScore, yellowScore])
-    chosenColor = None
-    if score_dict['red'] == lowest_score_value:
-        chosenColor = red
-    elif score_dict['black'] == lowest_score_value:
-        chosenColor = black
-    elif score_dict['yellow'] == lowest_score_value:
-        chosenColor = yellowScore
-
-    print(str(lowest_score_value) + "/" + str(scoreThreshold))
-
-    if chosenColor and lowest_score_value <= scoreThreshold:
-        return chosenColor
-    return None
+        # Turn depending on color
+        if color == colorAPI.red:
+            print("red registered, turning left")
+            driveMotor.on_for_degrees(speed=turnSpeed[1], degrees=turnDegrees)
+        elif color == colorAPI.black:
+            print("black registered, turning right")
+            driveMotor.on_for_degrees(speed=turnSpeed[0], degrees=turnDegrees)
+    elif color == colorAPI.yellow:
+        print("yellow registered, turning off")
+        backMotors.off()
+        backMotorsState = "off"
+        driveMotor.off()
 
 
 def doRace():
@@ -114,9 +72,9 @@ def doRace():
     #     print(sensor.rgb)
 
     while True:
-        read_color = sensor.rgb
-
-        color = getColor(read_color)
+        # Get the color from the sensor
+        # color = colorAPI.getColor(sensor.rgb)  # The custom color recognizer
+        color = colorAPI.getColorBuiltIn(sensor.color)  # The built-in color from the API, categorized by 0, 1, 2 etc.
         if not color:
             colorName = "None"
         else:
@@ -124,25 +82,39 @@ def doRace():
 
         print("Current color: " + colorName)
 
-        # print(to_save)
-        if buttons.right:
-            red.RGB_values.append(read_color)
-            print("Saved to red")
-            sleep(2)
-        elif buttons.up:
-            black.RGB_values.append(read_color)
-            print("Saved to black")
-            sleep(2)
-        elif buttons.left:
-            yellow.RGB_values.append(read_color)
-            print("Saved to yellow")
-            sleep(2)
-        elif buttons.enter:
-            red.save()
-            black.save()
-            yellow.save()
-            print("Saved colors to colors.json")
-            sleep(2)
+        # Save the color to the list of seen colors
+        seenColors.append(color)
+
+        # Drive, depending on the seen colors
+        if len(seenColors) < 5:
+            drive(color)
+        else:
+            count = len([x for x in seenColors if x == color])
+            percent = count/len(seenColors)*100
+
+            if percent >= seenColorsTolerancePercent:
+                drive(color)
+                sleep(driveDelay)
+
+        # # print(to_save)
+        # if buttons.right:
+        #     red.RGB_values.append(read_color)
+        #     print("Saved to red")
+        #     sleep(2)
+        # elif buttons.up:
+        #     black.RGB_values.append(read_color)
+        #     print("Saved to black")
+        #     sleep(2)
+        # elif buttons.left:
+        #     yellow.RGB_values.append(read_color)
+        #     print("Saved to yellow")
+        #     sleep(2)
+        # elif buttons.enter:
+        #     red.save()
+        #     black.save()
+        #     yellow.save()
+        #     print("Saved colors to colors.json")
+        #     sleep(2)
 
 
 if __name__ == '__main__':
