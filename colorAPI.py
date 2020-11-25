@@ -44,40 +44,24 @@ yellow = Color("yellow")
 
 
 def getColor(rgb):
-    # The lower score the better
-    redScore = 0
-    blackScore = 0
-    yellowScore = 0
+    # https://stackoverflow.com/questions/36439384/classifying-rgb-values-in-python
+    manhattan = lambda x, y: abs(x[0] - y[0]) + abs(x[1] - y[1]) + abs(x[2] - y[2])
+    colorList = []
+    for rgb in black.RGB_values:
+        colorList.append((black, rgb))
+    for rgb in yellow.RGB_values:
+        colorList.append((yellow, rgb))
+    for rgb in red.RGB_values:
+        colorList.append((red, rgb))
+    distances = [(color, manhattan(color_rgb, rgb)) for color, color_rgb in colorList]
+    distanceNumbers = [distance[1] for distance in distances]
 
-    def getScore(color, rgb):
-        scores = []
-        for db_rgb in color.RGB_values:
-            vec_diff = (rgb[0]-db_rgb[0], rgb[1]-db_rgb[1], rgb[2]-db_rgb[2])
-            vec_length = math.sqrt(vec_diff[0]**2+vec_diff[1]**2+vec_diff[2]**2)
-            scores.append(vec_length)
+    minDistance = min(distanceNumbers)
 
-        return sum(scores)/len(scores)
+    # print(colorFound)
+    # print(colorFound[0].color)
 
-    # Get color scores
-    redScore = getScore(red, rgb)
-    blackScore = getScore(black, rgb)
-    yellowScore = getScore(yellow, rgb)
 
-    # Get the smallest score
-    score_dict = {"red": redScore, "black": blackScore, "yellow": yellowScore}
-    lowest_score_value = min([redScore, blackScore, yellowScore])
-    chosenColor = None
-    if score_dict['red'] == lowest_score_value:
-        chosenColor = red
-    elif score_dict['black'] == lowest_score_value:
-        chosenColor = black
-    elif score_dict['yellow'] == lowest_score_value:
-        chosenColor = yellow
-
-    print(str(lowest_score_value) + "/" + str(scoreThreshold))
-
-    if chosenColor and lowest_score_value <= scoreThreshold:
-        return chosenColor
     return None
 
 
