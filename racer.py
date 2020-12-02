@@ -74,50 +74,53 @@ def doRace():
     #     print(sensor.rgb)
 
     while True:
-        # Get the color from the sensor
-        # color = colorAPI.getColor(sensor.rgb)  # The custom color recognizer
-        color = colorAPI.getColorBuiltIn(sensor.color)  # The built-in color from the API, categorized by 0, 1, 2 etc.
-        if not color:
-            colorName = "None"
-        else:
-            colorName = color.color
+        try:
+            # Get the color from the sensor
+            # color = colorAPI.getColor(sensor.rgb)  # The custom color recognizer
+            color = colorAPI.getColorBuiltIn(sensor.color)  # The built-in color from the API, categorized by 0, 1, 2 etc.
+            if not color:
+                colorName = "None"
+            else:
+                colorName = color.color
 
-        print("Current color: " + colorName)
+            print("Current color: " + colorName)
 
-        # Save the color to the list of seen colors
-        seenColors.append(color)
-        print(str(seenColors))
+            # Save the color to the list of seen colors
+            seenColors.append(color)
+            print(str(seenColors))
 
-        # Drive, depending on the seen colors
-        if len(seenColors) < 5:
-            drive(color)
-        else:
-            count = len([x for x in seenColors if x == color])
-            percent = count/len(seenColors)*100
-
-            if percent >= seenColorsTolerancePercent:
+            # Drive, depending on the seen colors
+            if len(seenColors) < 5:
                 drive(color)
-                sleep(driveDelay)
+            else:
+                count = len([x for x in seenColors if x == color])
+                percent = count/len(seenColors)*100
 
-        # # print(to_save)
-        # if buttons.right:
-        #     red.RGB_values.append(read_color)
-        #     print("Saved to red")
-        #     sleep(2)
-        # elif buttons.up:
-        #     black.RGB_values.append(read_color)
-        #     print("Saved to black")
-        #     sleep(2)
-        # elif buttons.left:
-        #     yellow.RGB_values.append(read_color)
-        #     print("Saved to yellow")
-        #     sleep(2)
-        # elif buttons.enter:
-        #     red.save()
-        #     black.save()
-        #     yellow.save()
-        #     print("Saved colors to colors.json")
-        #     sleep(2)
+                if percent >= seenColorsTolerancePercent:
+                    drive(color)
+                    sleep(driveDelay)
+
+            # # print(to_save)
+            # if buttons.right:
+            #     red.RGB_values.append(read_color)
+            #     print("Saved to red")
+            #     sleep(2)
+            # elif buttons.up:
+            #     black.RGB_values.append(read_color)
+            #     print("Saved to black")
+            #     sleep(2)
+            # elif buttons.left:
+            #     yellow.RGB_values.append(read_color)
+            #     print("Saved to yellow")
+            #     sleep(2)
+            # elif buttons.enter:
+            #     red.save()
+            #     black.save()
+            #     yellow.save()
+            #     print("Saved colors to colors.json")
+            #     sleep(2)
+        except Exception as e:
+            print("uh oh... - " + str(e))
 
 
 if __name__ == '__main__':
