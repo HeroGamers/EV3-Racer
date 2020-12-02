@@ -38,8 +38,10 @@ def setup():
 
 
 def drive(color=None):
+    print("drive() is running")
     global backMotorsState
     if not color:
+        print("no color, should be driving")
         if (backMotorsState == "off") or (backMotorsState == "turning"):
             print("driving")
             backMotors.on(left_speed=driveSpeed, right_speed=driveSpeed)
@@ -53,10 +55,10 @@ def drive(color=None):
 
         # Turn depending on color
         if color == colorAPI.red:
-            print("red registered, turning left")
+            print("red registered, turning right")
             driveMotor.on_for_degrees(speed=turnSpeed[1], degrees=turnDegrees)
         elif color == colorAPI.black:
-            print("black registered, turning right")
+            print("black registered, turning left")
             driveMotor.on_for_degrees(speed=turnSpeed[0], degrees=turnDegrees)
     elif color == colorAPI.yellow:
         print("yellow registered, turning off")
@@ -84,6 +86,7 @@ def doRace():
 
         # Save the color to the list of seen colors
         seenColors.append(color)
+        print(str(seenColors))
 
         # Drive, depending on the seen colors
         if len(seenColors) < 5:
