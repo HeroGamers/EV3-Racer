@@ -42,6 +42,7 @@ def drive(color=None):
     global backMotorsState
     if not color:
         print("no color, should be driving")
+        print("backmotorstate: " + backMotorsState)
         if (backMotorsState == "off") or (backMotorsState == "turning"):
             print("driving")
             backMotors.on(left_speed=driveSpeed, right_speed=driveSpeed)
