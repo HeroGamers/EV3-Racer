@@ -11,14 +11,15 @@ import colorAPI
 
 
 # Variables
-driveSpeed = SpeedPercent(100)
-turnDriveSpeed = SpeedPercent(50)
-turnSpeed = [SpeedPercent(30), SpeedPercent(-30)]  # Right and left
-turnDegrees = 90
+driveSpeed = 100  # Speed in percent
+turnDriveSpeed = 50  # Speed in percent
+turnSpeed = 30  # Speed in percent
+maxTurnDegrees = 90
 backMotorsState = "off"
+turning_direction = "none"
 seenColorsTolerancePercent = 90
 seenColors = collections.deque(maxlen=5)
-driveDelay = 0.5  # Delay between each loop of driving
+driveDelay = 5.5  # Delay between each loop of driving
 
 # The motors, sensors and other things on the robot
 buttons = Button()  # Any buton on the robot
@@ -38,29 +39,46 @@ def setup():
 
 
 def drive(color=None):
-    print("drive() is running")
     global backMotorsState
+    global turning_direction
     if not color:
-        print("no color, should be driving")
-        print("backmotorstate: " + backMotorsState)
         if (backMotorsState == "off") or (backMotorsState == "turning"):
             print("driving")
-            backMotors.on(left_speed=driveSpeed, right_speed=driveSpeed)
+            backMotors.on(left_speed=SpeedPercent(driveSpeed), right_speed=SpeedPercent(-driveSpeed))
             backMotorsState = "on"
+
+            if driveMotor.position != 0:
+                turning_direction = "none"
+                if driveMotor.position > 0:
+                    driveMotor.on_to_position(speed=SpeedPercent(-turnSpeed), position=0)
+                elif driveMotor.position < 0:
+                    driveMotor.on_to_position(speed=SpeedPercent(turnSpeed), position=0)
     elif (color == colorAPI.red) or (color == colorAPI.black):
         print("turning")
         # Set down the speed to our turn drive speed
         if backMotorsState != "turning":
-            backMotors.on(left_speed=turnDriveSpeed, right_speed=turnDriveSpeed)
+            backMotors.on(left_speed=SpeedPercent(turnDriveSpeed), right_speed=SpeedPercent(-turnDriveSpeed))
             backMotorsState = "turning"
 
         # Turn depending on color
         if color == colorAPI.red:
             print("red registered, turning right")
-            driveMotor.on_for_degrees(speed=turnSpeed[1], degrees=turnDegrees)
+            print("direction: " + turning_direction)
+            print("position: " + str(driveMotor.position) + "/" + str(-((driveMotor.count_per_rot/360)*turnDegrees)))
+            if turning_direction != "right":
+                turning_direction = "right"
+                driveMotor.on_to_position(speed=SpeedPercent(-turnSpeed), position=-((driveMotor.count_per_rot/360)*turnDegrees))
+                # driveMotor.on(speed=SpeedPercent(-turnSpeed))
+            # driveMotor.on_for_degrees(speed=SpeedPercent(-turnSpeed), degrees=turnDegrees)
         elif color == colorAPI.black:
             print("black registered, turning left")
-            driveMotor.on_for_degrees(speed=turnSpeed[0], degrees=turnDegrees)
+            print("direction: " + turning_direction)
+            print("position: " + str(driveMotor.position) + "/" + str(((driveMotor.count_per_rot/360)*turnDegrees)))
+            if turning_direction != "left":
+                turning_direction = "left"
+                driveMotor.on_to_position(speed=SpeedPercent(turnSpeed), position=((driveMotor.count_per_rot/360)*turnDegrees))
+                # driveMotor.on(speed=SpeedPercent(turnSpeed))
+            # driveMotor.on_for_degrees(speed=SpeedPercent(turnSpeed), degrees=turnDegrees)
     elif color == colorAPI.yellow:
         print("yellow registered, turning off")
         backMotors.off()
@@ -70,6 +88,8 @@ def drive(color=None):
 
 def doRace():
     print("Starting racer...")
+
+    driveMotor.position = 0
 
     # while buttons.any() is False:
     #     print(sensor.rgb)
@@ -88,7 +108,6 @@ def doRace():
 
             # Save the color to the list of seen colors
             seenColors.append(color)
-            print(str(seenColors))
 
             # Drive, depending on the seen colors
             if len(seenColors) < 5:
