@@ -113,4 +113,3 @@ print(black.__dict__, red.__dict__, yellow.__dict__)
 # yellow.save()
 #
 # print(black.__dict__, red.__dict__, yellow.__dict__)
-
