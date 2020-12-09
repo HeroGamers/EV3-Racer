@@ -12,14 +12,14 @@ import colorAPI
 
 # Variables
 driveSpeed = 100  # Speed in percent
-turnDriveSpeed = 50  # Speed in percent
-turnSpeed = 30  # Speed in percent
-maxTurnDegrees = 90
+turnDriveSpeed = 30  # Speed in percent
+turnSpeed = 10  # Speed in percent
+maxTurnDegrees = 60
 backMotorsState = "off"
 turning_direction = "none"
 seenColorsTolerancePercent = 90
 seenColors = collections.deque(maxlen=5)
-driveDelay = 5.5  # Delay between each loop of driving
+driveDelay = 0.1  # Delay between each loop of driving
 
 # The motors, sensors and other things on the robot
 buttons = Button()  # Any buton on the robot
@@ -64,19 +64,19 @@ def drive(color=None):
         if color == colorAPI.red:
             print("red registered, turning right")
             print("direction: " + turning_direction)
-            print("position: " + str(driveMotor.position) + "/" + str(-((driveMotor.count_per_rot/360)*turnDegrees)))
+            print("position: " + str(driveMotor.position) + "/" + str(-((driveMotor.count_per_rot/360)*maxTurnDegrees)))
             if turning_direction != "right":
                 turning_direction = "right"
-                driveMotor.on_to_position(speed=SpeedPercent(-turnSpeed), position=-((driveMotor.count_per_rot/360)*turnDegrees))
+                driveMotor.on_to_position(speed=SpeedPercent(-turnSpeed), position=-((driveMotor.count_per_rot/360)*maxTurnDegrees))
                 # driveMotor.on(speed=SpeedPercent(-turnSpeed))
             # driveMotor.on_for_degrees(speed=SpeedPercent(-turnSpeed), degrees=turnDegrees)
         elif color == colorAPI.black:
             print("black registered, turning left")
             print("direction: " + turning_direction)
-            print("position: " + str(driveMotor.position) + "/" + str(((driveMotor.count_per_rot/360)*turnDegrees)))
+            print("position: " + str(driveMotor.position) + "/" + str(((driveMotor.count_per_rot/360)*maxTurnDegrees)))
             if turning_direction != "left":
                 turning_direction = "left"
-                driveMotor.on_to_position(speed=SpeedPercent(turnSpeed), position=((driveMotor.count_per_rot/360)*turnDegrees))
+                driveMotor.on_to_position(speed=SpeedPercent(turnSpeed), position=((driveMotor.count_per_rot/360)*maxTurnDegrees))
                 # driveMotor.on(speed=SpeedPercent(turnSpeed))
             # driveMotor.on_for_degrees(speed=SpeedPercent(turnSpeed), degrees=turnDegrees)
     elif color == colorAPI.yellow:
